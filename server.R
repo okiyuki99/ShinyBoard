@@ -3,7 +3,6 @@ shinyServer(function(input, output, session) {
   print("Initialize Start")
   cnt_table <- 0
   work_data <- list()
-  obs_event_remove <- list()
   id_notification <- ""
   #id_notification <<- showNotification("File Format Error", duration = 5, closeButton = T, type = "error")
   
@@ -36,13 +35,18 @@ shinyServer(function(input, output, session) {
     
     cnt_table <<- cnt_table + 1
     work_data[[cnt_table]] <<- df
-                                   
+    
     insertUI(
       selector = "#btn_run",
       where = "afterEnd",
-      ui = shinydashboard::box(id = paste0("box",cnt_table), title = paste0("result_table",cnt_table), status = "primary", width = 12, 
-        actionButton(paste0("remove",cnt_table), "", icon = icon("close")),
-        DTOutput(paste0("result_table",cnt_table))
+      ui = shinydashboard::box(id = paste0("box",cnt_table), title = NULL, status = "primary", width = 12, 
+        div(style="display:inline-block",tags$h3(paste0("Table",cnt_table))),
+        div(style="display:inline-block",tags$button(id = paste0("remove",cnt_table), type="button", class="btn action-button btn-default btn-sm", HTML('<i class="fa fa-trash"></i> Trash'))),
+        #DTOutput(paste0("result_table",cnt_table))
+        tabsetPanel(
+          tabPanel("table", DTOutput(paste0("result_table",cnt_table))),
+          tabPanel("code", verbatimTextOutput(paste0("result_code",cnt_table)))
+        )
       )
       
     )
@@ -53,10 +57,18 @@ shinyServer(function(input, output, session) {
                      initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#666', 'color': '#fff'});","}"))
     )
     
-    obs_event_remove[[cnt_table]] <<- observeEvent(input[[paste0("remove",cnt_table)]], {
-      removeUI(
-        selector = paste0("div:has(> #box",cnt_table,")")
-      )
+    output[[paste0('result_code',cnt_table)]] <- renderText(
+      input$code
+    )
+    
+    
+    
+    obs_event_remove <- lapply(1:cnt_table, function(i){
+      observeEvent(input[[paste0("remove",i)]], {
+        removeUI(
+          selector = paste0("div:has(> #box",i,")")
+        )
+      })
     })
   })
   
